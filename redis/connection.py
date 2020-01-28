@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 from distutils.version import StrictVersion
 from itertools import chain
-from time import time
+from time import time, sleep
 import errno
 import io
 import os
@@ -1095,6 +1095,7 @@ class ConnectionPool(object):
 
     def reset(self):
         self.pid = os.getpid()
+        sleep(0.2)
         self._lock = threading.RLock()
         self._created_connections = 0
         self._available_connections = []

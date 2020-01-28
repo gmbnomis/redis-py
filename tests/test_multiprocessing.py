@@ -5,6 +5,8 @@ import contextlib
 import redis
 from redis.connection import Connection, ConnectionPool
 from redis.exceptions import ConnectionError
+from threading import Thread
+import time
 
 from .conftest import _get_client
 
@@ -98,8 +100,17 @@ class TestMultiprocessing(object):
             conn.send_command('ping')
             assert conn.read_response() == b'PONG'
 
+        def target_thread(pool):
+            conn = pool.get_connection('ping')
+            assert conn.pid != main_conn_pid
+            with exit_callback(pool.release, conn):
+                assert conn.send_command('ping') is None
+                assert conn.read_response() == b'PONG'
+
         def target(pool):
             with exit_callback(pool.disconnect):
+                Thread(target=target_thread, args=(pool,)).start()
+                time.sleep(0.1)
                 conn = pool.get_connection('ping')
                 assert conn.pid != main_conn_pid
                 with exit_callback(pool.release, conn):
